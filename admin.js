@@ -31,6 +31,7 @@ async function doLogin() {
   
   if (email === store.email && pass === store.password) {
     isAdmin = true;
+    sessionStorage.setItem('saas_admin_logged', store.slug);
     await renderAdmin();
   } else {
     showToast('Credenciais inválidas ❌');
@@ -65,7 +66,7 @@ async function renderAdmin() {
       <main class="admin-main">
         <div class="admin-topbar">
           <div>
-            <button class="menu-toggle" onclick="document.getElementById('adminSidebar').classList.toggle('open')" style="display:none;margin-right:12px">☰</button>
+            <button id="adminMenuToggle" class="menu-toggle" onclick="document.getElementById('adminSidebar').classList.toggle('open')" style="display:none;margin-right:12px">☰</button>
             <h1 id="adminTitle">Dashboard</h1>
           </div>
           <button class="btn-outline" onclick="window.open(window.location.href.split('#')[0] + '?s=' + currentStoreData.slug, '_blank')" style="font-size:13px;padding:8px 16px">👁️ Ver Catálogo</button>
@@ -333,7 +334,7 @@ async function renderAdmin() {
 
   // Show mobile menu toggle
   if (window.innerWidth <= 768) {
-    document.querySelector('.menu-toggle')?.style?.setProperty('display', 'block');
+    document.getElementById('adminMenuToggle')?.style?.setProperty('display', 'block');
   }
 }
 
@@ -521,6 +522,7 @@ function shareWhatsAppAdmin() {
 
 function adminLogout() {
   isAdmin = false;
+  sessionStorage.removeItem('saas_admin_logged');
   window.location.hash = '';
   renderCatalog();
 }

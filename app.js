@@ -144,7 +144,8 @@ async function doGlobalLogin() {
       return;
     }
 
-    // Login com sucesso! Redirecionar para o admin da loja específica
+    // Login com sucesso! Salva na sessão e redireciona
+    sessionStorage.setItem('saas_admin_logged', data.slug);
     window.location.href = `?s=${data.slug}#admin`;
   } catch (err) {
     showToast('Erro ao conectar. Tente novamente.');
@@ -155,8 +156,15 @@ async function doGlobalLogin() {
 
 async function checkRoute() {
   const hash = window.location.hash;
+  const store = await Storage.getStore();
+
   if (hash === '#admin' || hash === '#admin-login') {
-    showAdminLogin();
+    if (sessionStorage.getItem('saas_admin_logged') === store?.slug) {
+      isAdmin = true;
+      await renderAdmin();
+    } else {
+      showAdminLogin();
+    }
   } else {
     await renderCatalog();
   }
