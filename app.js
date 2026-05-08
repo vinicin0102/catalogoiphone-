@@ -10,18 +10,19 @@ let currentAdminSection = 'dashboard';
 document.addEventListener('DOMContentLoaded', async () => {
   Storage.initDefaults();
   
-  // Identificar a loja primeiro
+  // Primeiro, vamos esconder o carregamento após um breve delay
+  setTimeout(() => {
+    document.querySelector('.loading-screen')?.classList.add('hidden');
+  }, 1000);
+
+  // Identificar a loja
   const store = await Storage.identifyStore();
   
   if (!store) {
-    renderError('Loja não encontrada ou link inválido. Verifique o endereço.');
+    renderError('Bem-vindo à nossa plataforma! Para ver um catálogo, use o link correto (ex: ?s=nome-da-loja).');
     return;
   }
 
-  setTimeout(() => {
-    document.querySelector('.loading-screen')?.classList.add('hidden');
-  }, 1200);
-  
   checkRoute();
   initScrollAnimations();
 });
