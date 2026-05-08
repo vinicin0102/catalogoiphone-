@@ -15,7 +15,7 @@ const Storage = {
       return null;
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('stores')
       .select('*')
       .eq('slug', slug)
@@ -139,6 +139,6 @@ const Storage = {
 
   // Método legado para evitar erros de inicialização, mas não faz nada agora
   initDefaults() {
-    console.log('Sistema migrado para Supabase. Ignorando LocalStorage.');
+    console.log('Sistema migrado para supabaseClient. Ignorando LocalStorage.');
   }
 };

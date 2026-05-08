@@ -404,14 +404,14 @@
     let editingStoreId = null;
 
     async function loadDashboard() {
-      const { data: stores, error } = await supabase.from('stores').select('*').order('created_at', { ascending: false });
+      const { data: stores, error } = await supabaseClient.from('stores').select('*').order('created_at', { ascending: false });
       if (error) return showToast('Erro ao carregar dados ❌');
 
       // Stats
       document.getElementById('stat-total').textContent = stores.length;
       document.getElementById('stat-active').textContent = stores.filter(s => s.active).length;
       
-      const { count: prodCount } = await supabase.from('products').select('*', { count: 'exact', head: true });
+      const { count: prodCount } = await supabaseClient.from('products').select('*', { count: 'exact', head: true });
       document.getElementById('stat-products').textContent = prodCount || 0;
 
       // Table
@@ -452,11 +452,11 @@
       if (!data.name || !data.slug || !data.email) return showToast('Preencha os campos obrigatórios ⚠️');
 
       if (editingStoreId) {
-        const { error } = await supabase.from('stores').update(data).eq('id', editingStoreId);
+        const { error } = await supabaseClient.from('stores').update(data).eq('id', editingStoreId);
         if (error) return showToast('Erro ao atualizar: ' + error.message);
         showToast('Loja atualizada com sucesso! ✨');
       } else {
-        const { error } = await supabase.from('stores').insert([data]);
+        const { error } = await supabaseClient.from('stores').insert([data]);
         if (error) return showToast('Erro ao criar: ' + error.message);
         showToast('Nova loja cadastrada com sucesso! 🚀');
       }
@@ -466,7 +466,7 @@
     }
 
     async function toggleStoreStatus(id, current) {
-      const { error } = await supabase.from('stores').update({ active: !current }).eq('id', id);
+      const { error } = await supabaseClient.from('stores').update({ active: !current }).eq('id', id);
       if (error) return showToast('Erro ao mudar status');
       loadDashboard();
       showToast('Status atualizado! 🔄');
@@ -474,7 +474,7 @@
 
     async function deleteStore(id) {
       if (!confirm('ATENÇÃO: Isso apagará permanentemente a loja e todos os seus dados. Continuar?')) return;
-      const { error } = await supabase.from('stores').delete().eq('id', id);
+      const { error } = await supabaseClient.from('stores').delete().eq('id', id);
       if (error) return showToast('Erro ao excluir');
       loadDashboard();
       showToast('Loja removida 🗑️');
@@ -485,7 +485,7 @@
       document.getElementById('modal-title').textContent = id ? 'Editar Loja' : 'Cadastrar Nova Loja';
       
       if (id) {
-        const { data } = await supabase.from('stores').select('*').eq('id', id).single();
+        const { data } = await supabaseClient.from('stores').select('*').eq('id', id).single();
         if (data) {
           document.getElementById('m-name').value = data.name;
           document.getElementById('m-slug').value = data.slug;
