@@ -7,32 +7,42 @@ let editingProductId = null;
 let currentAdminSection = 'dashboard';
 
 // ===== INITIALIZATION =====
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   Storage.initDefaults();
+  
+  // Identificar a loja primeiro
+  const store = await Storage.identifyStore();
+  
+  if (!store) {
+    renderError('Loja não encontrada ou link inválido. Verifique o endereço.');
+    return;
+  }
+
   setTimeout(() => {
     document.querySelector('.loading-screen')?.classList.add('hidden');
   }, 1200);
+  
   checkRoute();
   initScrollAnimations();
 });
 
-function checkRoute() {
+async function checkRoute() {
   const hash = window.location.hash;
   if (hash === '#admin' || hash === '#admin-login') {
     showAdminLogin();
   } else {
-    renderCatalog();
+    await renderCatalog();
   }
 }
 
 window.addEventListener('hashchange', checkRoute);
 
 // ===== RENDER CATALOG =====
-function renderCatalog() {
-  const store = Storage.getStore();
-  const products = Storage.getProducts();
-  const categories = Storage.getCategories();
-  const reviews = Storage.getReviews();
+async function renderCatalog() {
+  const store = await Storage.getStore();
+  const products = await Storage.getProducts();
+  const categories = await Storage.getCategories();
+  const reviews = await Storage.getReviews();
   const featured = products.filter(p => p.featured);
   const whatsappLink = `https://wa.me/${store.whatsapp}`;
 
@@ -268,5 +278,16 @@ function initScrollAnimations() {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
   }, { threshold: 0.1 });
-  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+// ===== ERROR HANDLING =====
+function renderError(msg) {
+  document.getElementById('app').innerHTML = `
+    <div style="height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;background:var(--bg);color:white;font-family:sans-serif;">
+      <div>
+        <h1 style="font-size:48px;margin-bottom:10px">⚠️</h1>
+        <h2>Oops!</h2>
+        <p style="color:var(--text-muted);margin:15px 0 30px">${msg}</p>
+        <a href="https://wa.me/5511999999999" target="_blank" class="btn-primary" style="text-decoration:none">Falar com Suporte</a>
+      </div>
+    </div>
+  `;
 }

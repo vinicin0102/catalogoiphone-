@@ -24,22 +24,23 @@ function showAdminLogin() {
   `;
 }
 
-function doLogin() {
+async function doLogin() {
   const email = document.getElementById('loginEmail').value;
   const pass = document.getElementById('loginPass').value;
-  const store = Storage.getStore();
+  const store = await Storage.getStore();
+  
   if (email === store.email && pass === store.password) {
     isAdmin = true;
-    renderAdmin();
+    await renderAdmin();
   } else {
     showToast('Credenciais inválidas ❌');
   }
 }
 
-function renderAdmin() {
-  const store = Storage.getStore();
-  const products = Storage.getProducts();
-  const categories = Storage.getCategories();
+async function renderAdmin() {
+  const store = await Storage.getStore();
+  const products = await Storage.getProducts();
+  const categories = await Storage.getCategories();
 
   document.getElementById('app').innerHTML = `
     <div class="admin-layout">
@@ -67,7 +68,7 @@ function renderAdmin() {
             <button class="menu-toggle" onclick="document.getElementById('adminSidebar').classList.toggle('open')" style="display:none;margin-right:12px">☰</button>
             <h1 id="adminTitle">Dashboard</h1>
           </div>
-          <button class="btn-outline" onclick="window.open(window.location.href.split('#')[0],'_blank')" style="font-size:13px;padding:8px 16px">👁️ Ver Catálogo</button>
+          <button class="btn-outline" onclick="window.open(window.location.href.split('#')[0] + '?s=' + currentStoreData.slug, '_blank')" style="font-size:13px;padding:8px 16px">👁️ Ver Catálogo</button>
         </div>
 
         <!-- DASHBOARD -->
@@ -348,33 +349,33 @@ function switchSection(section, btn) {
 }
 
 // ===== STORE SETTINGS =====
-function saveStoreSettings() {
-  const store = Storage.getStore();
+async function saveStoreSettings() {
+  const store = await Storage.getStore();
   store.name = document.getElementById('sStoreName').value;
   store.slogan = document.getElementById('sStoreSlogan').value;
   store.whatsapp = document.getElementById('sStoreWA').value;
-  Storage.saveStore(store);
+  await Storage.saveStore(store);
   showToast('Configurações salvas! ✅');
 }
 
-function saveCredentials() {
-  const store = Storage.getStore();
+async function saveCredentials() {
+  const store = await Storage.getStore();
   store.email = document.getElementById('sStoreEmail').value;
   const newPass = document.getElementById('sStorePass').value;
   if (newPass) store.password = newPass;
-  Storage.saveStore(store);
+  await Storage.saveStore(store);
   showToast('Credenciais atualizadas! ✅');
 }
 
-function uploadLogo(event) {
+async function uploadLogo(event) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = (e) => {
-    const store = Storage.getStore();
+  reader.onload = async (e) => {
+    const store = await Storage.getStore();
     store.logo = e.target.result;
-    Storage.saveStore(store);
-    renderAdmin();
+    await Storage.saveStore(store);
+    await renderAdmin();
     showToast('Logo atualizada! ✅');
   };
   reader.readAsDataURL(file);
@@ -383,17 +384,18 @@ function uploadLogo(event) {
 // ===== PRODUCT CRUD =====
 let tempProductImage = '';
 
-function openProductModal(id) {
+async function openProductModal(id) {
   editingProductId = id || null;
   tempProductImage = '';
   const modal = document.getElementById('productModal');
   document.getElementById('modalTitle').textContent = id ? 'Editar Produto' : 'Novo Produto';
 
   if (id) {
-    const p = Storage.getProducts().find(x => x.id === id);
+    const products = await Storage.getProducts();
+    const p = products.find(x => x.id === id);
     if (p) {
       document.getElementById('pName').value = p.name;
-      document.getElementById('pCategory').value = p.category;
+      document.getElementById('pCategory').value = p.category_id || p.category;
       document.getElementById('pPrice').value = p.price;
       document.getElementById('pOldPrice').value = p.oldPrice || '';
       document.getElementById('pStorage').value = p.storage || '';
@@ -427,14 +429,13 @@ function previewProductImage(event) {
   reader.readAsDataURL(file);
 }
 
-function saveProduct() {
-  const products = Storage.getProducts();
+async function saveProduct() {
   const data = {
-    id: editingProductId || Date.now().toString(),
+    id: editingProductId || null,
     name: document.getElementById('pName').value,
-    category: document.getElementById('pCategory').value,
+    category_id: document.getElementById('pCategory').value,
     price: parseFloat(document.getElementById('pPrice').value) || 0,
-    oldPrice: parseFloat(document.getElementById('pOldPrice').value) || 0,
+    old_price: parseFloat(document.getElementById('pOldPrice').value) || 0,
     storage: document.getElementById('pStorage').value,
     color: document.getElementById('pColor').value,
     condition: document.getElementById('pCondition').value,
@@ -447,24 +448,16 @@ function saveProduct() {
 
   if (!data.name) { showToast('Preencha o nome ❌'); return; }
 
-  if (editingProductId) {
-    const idx = products.findIndex(p => p.id === editingProductId);
-    if (idx >= 0) products[idx] = data;
-  } else {
-    products.push(data);
-  }
-
-  Storage.saveProducts(products);
+  await Storage.saveProduct(data);
   closeModal('productModal');
-  renderAdmin();
+  await renderAdmin();
   showToast(editingProductId ? 'Produto atualizado! ✅' : 'Produto adicionado! ✅');
 }
 
-function deleteProduct(id) {
+async function deleteProduct(id) {
   if (!confirm('Remover este produto?')) return;
-  const products = Storage.getProducts().filter(p => p.id !== id);
-  Storage.saveProducts(products);
-  renderAdmin();
+  await Storage.deleteProduct(id);
+  await renderAdmin();
   showToast('Produto removido! 🗑️');
 }
 
@@ -475,23 +468,20 @@ function openCategoryModal() {
   document.getElementById('categoryModal').classList.add('show');
 }
 
-function saveCategory() {
+async function saveCategory() {
   const name = document.getElementById('cName').value;
   const icon = document.getElementById('cIcon').value || '📦';
   if (!name) { showToast('Preencha o nome ❌'); return; }
-  const cats = Storage.getCategories();
-  cats.push({ id: name.toLowerCase().replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, ''), name, icon });
-  Storage.saveCategories(cats);
+  await Storage.saveCategory({ name, icon });
   closeModal('categoryModal');
-  renderAdmin();
+  await renderAdmin();
   showToast('Categoria adicionada! ✅');
 }
 
-function deleteCategory(id) {
+async function deleteCategory(id) {
   if (!confirm('Remover esta categoria?')) return;
-  const cats = Storage.getCategories().filter(c => c.id !== id);
-  Storage.saveCategories(cats);
-  renderAdmin();
+  await Storage.deleteCategory(id);
+  await renderAdmin();
   showToast('Categoria removida! 🗑️');
 }
 
@@ -502,24 +492,21 @@ function openReviewModal() {
   document.getElementById('reviewModal').classList.add('show');
 }
 
-function saveReview() {
+async function saveReview() {
   const name = document.getElementById('rName').value;
   const text = document.getElementById('rText').value;
   const stars = parseInt(document.getElementById('rStars').value);
   if (!name || !text) { showToast('Preencha todos os campos ❌'); return; }
-  const reviews = Storage.getReviews();
-  reviews.push({ id: Date.now().toString(), name, text, stars, date: 'Agora' });
-  Storage.saveReviews(reviews);
+  await Storage.saveReview({ name, text, stars, date: 'Agora' });
   closeModal('reviewModal');
-  renderAdmin();
+  await renderAdmin();
   showToast('Avaliação adicionada! ✅');
 }
 
-function deleteReview(id) {
+async function deleteReview(id) {
   if (!confirm('Remover esta avaliação?')) return;
-  const reviews = Storage.getReviews().filter(r => r.id !== id);
-  Storage.saveReviews(reviews);
-  renderAdmin();
+  await Storage.deleteReview(id);
+  await renderAdmin();
   showToast('Avaliação removida! 🗑️');
 }
 

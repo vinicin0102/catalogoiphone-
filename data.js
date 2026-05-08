@@ -1,118 +1,144 @@
-// ===== DATA LAYER - Multi-Store White Label System =====
+// ===== DATA LAYER - Supabase Multi-Store SaaS Integration =====
 
-const DEFAULT_STORE = {
-  id: 'demo-store',
-  name: 'TechStore Premium',
-  slogan: 'O melhor em tecnologia Apple',
-  whatsapp: '5511999999999',
-  logo: '',
-  banner: '',
-  email: 'admin@techstore.com',
-  password: 'admin123',
-  createdAt: new Date().toISOString()
-};
+let currentStoreId = null;
+let currentStoreData = null;
 
-const DEFAULT_CATEGORIES = [
-  { id: 'iphones-novos', name: 'iPhones Novos', icon: '📱' },
-  { id: 'iphones-seminovos', name: 'iPhones Seminovos', icon: '🔄' },
-  { id: 'capinhas', name: 'Capinhas', icon: '🛡️' },
-  { id: 'carregadores', name: 'Carregadores', icon: '🔌' },
-  { id: 'airpods', name: 'AirPods', icon: '🎧' },
-  { id: 'smartwatches', name: 'Smartwatches', icon: '⌚' },
-  { id: 'acessorios', name: 'Acessórios', icon: '✨' }
-];
-
-const DEFAULT_PRODUCTS = [
-  {
-    id: '1', name: 'iPhone 15 Pro Max', category: 'iphones-novos',
-    storage: '256GB', color: 'Titânio Natural', condition: 'Novo',
-    price: 8999, oldPrice: 9999, description: 'O iPhone mais poderoso já criado. Chip A17 Pro, câmera de 48MP e design em titânio.',
-    image: 'images/iphone-product.png', badge: 'new', featured: true, stock: 12
-  },
-  {
-    id: '2', name: 'iPhone 14 Pro', category: 'iphones-seminovos',
-    storage: '128GB', color: 'Roxo Profundo', condition: 'Seminovo - Grade A',
-    price: 5499, oldPrice: 7499, description: 'Estado impecável, bateria acima de 90%. Garantia de 6 meses.',
-    image: 'images/iphone-product.png', badge: 'promo', featured: true, stock: 5
-  },
-  {
-    id: '3', name: 'AirPods Pro 2ª Geração', category: 'airpods',
-    storage: '', color: 'Branco', condition: 'Novo',
-    price: 1899, oldPrice: 2299, description: 'Cancelamento ativo de ruído, áudio adaptativo e até 6h de reprodução.',
-    image: 'images/airpods-product.png', badge: 'featured', featured: true, stock: 20
-  },
-  {
-    id: '4', name: 'Apple Watch Ultra 2', category: 'smartwatches',
-    storage: '', color: 'Titânio', condition: 'Novo',
-    price: 5999, oldPrice: 6999, description: 'O relógio mais robusto e capaz da Apple. GPS de dupla frequência e até 36h de bateria.',
-    image: 'images/watch-product.png', badge: 'new', featured: false, stock: 8
-  },
-  {
-    id: '5', name: 'Carregador MagSafe', category: 'carregadores',
-    storage: '', color: 'Branco', condition: 'Novo',
-    price: 399, oldPrice: 499, description: 'Carregamento sem fio magnético de até 15W. Compatível com iPhone 12 ou superior.',
-    image: 'images/charger-product.png', badge: '', featured: false, stock: 30
-  },
-  {
-    id: '6', name: 'Capa Clear MagSafe', category: 'capinhas',
-    storage: '', color: 'Transparente', condition: 'Novo',
-    price: 249, oldPrice: 349, description: 'Proteção premium transparente com anel MagSafe integrado. Anti-amarelamento.',
-    image: 'images/case-product.png', badge: '', featured: false, stock: 50
-  },
-  {
-    id: '7', name: 'iPhone 13', category: 'iphones-seminovos',
-    storage: '128GB', color: 'Azul', condition: 'Seminovo - Grade A',
-    price: 3299, oldPrice: 4999, description: 'Excelente estado, sem marcas de uso. Bateria acima de 85%.',
-    image: 'images/iphone-product.png', badge: 'promo', featured: false, stock: 7
-  },
-  {
-    id: '8', name: 'iPhone 15', category: 'iphones-novos',
-    storage: '128GB', color: 'Rosa', condition: 'Novo',
-    price: 5999, oldPrice: 6499, description: 'Design com Dynamic Island, câmera de 48MP e conector USB-C.',
-    image: 'images/iphone-product.png', badge: 'new', featured: true, stock: 15
-  }
-];
-
-const DEFAULT_REVIEWS = [
-  { id: '1', name: 'Maria Silva', stars: 5, text: 'Comprei meu iPhone 15 Pro aqui e estou apaixonada! Entrega super rápida e preço justo. Recomendo demais!', date: '2 dias atrás' },
-  { id: '2', name: 'João Santos', stars: 5, text: 'Melhor loja de iPhones da região. Atendimento nota 10 pelo WhatsApp, tiraram todas as minhas dúvidas.', date: '1 semana atrás' },
-  { id: '3', name: 'Ana Costa', stars: 4, text: 'Seminovo em estado impecável, parecia novo! Garantia de 6 meses deu tranquilidade na compra.', date: '2 semanas atrás' }
-];
-
-// ===== STORAGE MANAGER =====
 const Storage = {
-  getStore() {
-    const data = localStorage.getItem('cp_store');
-    return data ? JSON.parse(data) : { ...DEFAULT_STORE };
+  // Identificar a loja pelo slug na URL (?s=slug)
+  async identifyStore() {
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get('s') || params.get('slug');
+    
+    if (!slug) {
+      // Se não houver slug, podemos redirecionar para uma landing page ou mostrar erro
+      console.error('Nenhuma loja identificada na URL');
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from('stores')
+      .select('*')
+      .eq('slug', slug)
+      .eq('active', true)
+      .single();
+
+    if (error || !data) {
+      console.error('Loja não encontrada ou inativa');
+      return null;
+    }
+
+    currentStoreId = data.id;
+    currentStoreData = data;
+    return data;
   },
-  saveStore(store) {
-    localStorage.setItem('cp_store', JSON.stringify(store));
+
+  async getStore() {
+    if (currentStoreData) return currentStoreData;
+    return await this.identifyStore();
   },
-  getProducts() {
-    const data = localStorage.getItem('cp_products');
-    return data ? JSON.parse(data) : [...DEFAULT_PRODUCTS];
+
+  async saveStore(store) {
+    const { data, error } = await supabase
+      .from('stores')
+      .update(store)
+      .eq('id', currentStoreId);
+    if (error) throw error;
+    currentStoreData = { ...currentStoreData, ...store };
+    return data;
   },
-  saveProducts(products) {
-    localStorage.setItem('cp_products', JSON.stringify(products));
+
+  async getProducts() {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('store_id', currentStoreId)
+      .order('created_at', { ascending: false });
+    if (error) return [];
+    return data;
   },
-  getCategories() {
-    const data = localStorage.getItem('cp_categories');
-    return data ? JSON.parse(data) : [...DEFAULT_CATEGORIES];
+
+  async saveProduct(product) {
+    product.store_id = currentStoreId;
+    if (product.id && product.id.length > 20) { // UUID check
+      const { data, error } = await supabase
+        .from('products')
+        .update(product)
+        .eq('id', product.id);
+      if (error) throw error;
+      return data;
+    } else {
+      delete product.id; // Let Supabase generate UUID
+      const { data, error } = await supabase
+        .from('products')
+        .insert([product]);
+      if (error) throw error;
+      return data;
+    }
   },
-  saveCategories(cats) {
-    localStorage.setItem('cp_categories', JSON.stringify(cats));
+
+  async deleteProduct(id) {
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
   },
-  getReviews() {
-    const data = localStorage.getItem('cp_reviews');
-    return data ? JSON.parse(data) : [...DEFAULT_REVIEWS];
+
+  async getCategories() {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('store_id', currentStoreId);
+    if (error) return [];
+    return data;
   },
-  saveReviews(reviews) {
-    localStorage.setItem('cp_reviews', JSON.stringify(reviews));
+
+  async saveCategory(cat) {
+    cat.store_id = currentStoreId;
+    const { data, error } = await supabase
+      .from('categories')
+      .insert([cat]);
+    if (error) throw error;
+    return data;
   },
+
+  async deleteCategory(id) {
+    const { error } = await supabase
+      .from('categories')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+  },
+
+  async getReviews() {
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*')
+      .eq('store_id', currentStoreId)
+      .order('created_at', { ascending: false });
+    if (error) return [];
+    return data;
+  },
+
+  async saveReview(review) {
+    review.store_id = currentStoreId;
+    const { data, error } = await supabase
+      .from('reviews')
+      .insert([review]);
+    if (error) throw error;
+    return data;
+  },
+
+  async deleteReview(id) {
+    const { error } = await supabase
+      .from('reviews')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+  },
+
+  // Método legado para evitar erros de inicialização, mas não faz nada agora
   initDefaults() {
-    if (!localStorage.getItem('cp_store')) this.saveStore({ ...DEFAULT_STORE });
-    if (!localStorage.getItem('cp_products')) this.saveProducts([...DEFAULT_PRODUCTS]);
-    if (!localStorage.getItem('cp_categories')) this.saveCategories([...DEFAULT_CATEGORIES]);
-    if (!localStorage.getItem('cp_reviews')) this.saveReviews([...DEFAULT_REVIEWS]);
+    console.log('Sistema migrado para Supabase. Ignorando LocalStorage.');
   }
 };

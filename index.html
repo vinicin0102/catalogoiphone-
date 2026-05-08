@@ -11,6 +11,9 @@
   <title>Catálogo Premium | iPhones & Acessórios Apple</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+  
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <!-- Loading Screen -->
@@ -22,9 +25,17 @@
   </div>
 
   <!-- App Container -->
-  <div id="app"></div>
+  <div id="app">
+    <div id="store-loader" style="height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);color:white;font-family:sans-serif;">
+      <div style="text-align:center">
+        <div class="loader-ring" style="margin:0 auto 20px"></div>
+        <p>Buscando sua loja...</p>
+      </div>
+    </div>
+  </div>
 
   <!-- Scripts -->
+  <script src="supabase-config.js"></script>
   <script src="data.js"></script>
   <script src="app.js"></script>
   <script src="admin.js"></script>
