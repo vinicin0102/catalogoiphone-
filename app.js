@@ -12,31 +12,146 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     Storage.initDefaults();
     
-    // Forçar o sumiço da tela de loading em no máximo 2 segundos, aconteça o que acontecer
+    // Forçar o sumiço da tela de loading
     setTimeout(() => {
-      const loader = document.querySelector('.loading-screen');
-      if (loader) {
-        loader.classList.add('hidden');
-        console.log('Loading removido via timeout de segurança');
-      }
-    }, 2000);
+      document.querySelector('.loading-screen')?.classList.add('hidden');
+    }, 1500);
 
     // Identificar a loja
     const store = await Storage.identifyStore();
     
     if (!store) {
-      renderError('Bem-vindo! Use um link de loja válido (ex: ?s=demo).');
+      // MOSTRAR LANDING PAGE DE VENDAS SE NÃO HOUVER LOJA NA URL
+      renderLandingPage();
     } else {
       await checkRoute();
       initScrollAnimations();
     }
   } catch (err) {
     console.error('Erro crítico na inicialização:', err);
-    // Se der erro, pelo menos removemos o loading para mostrar o erro
     document.querySelector('.loading-screen')?.classList.add('hidden');
-    renderError('Erro de conexão com o banco de dados. Verifique seu console.');
+    renderError('Erro de conexão. Tente novamente.');
   }
 });
+
+// ===== LANDING PAGE DE VENDAS (SAAS) =====
+function renderLandingPage() {
+  document.getElementById('app').innerHTML = `
+    <div class="landing-page">
+      <!-- Nav -->
+      <nav class="header" style="background:rgba(0,0,0,0.9)">
+        <div class="header-inner">
+          <div class="store-brand">
+            <div class="store-logo" style="background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:900;color:white">C</div>
+            <div class="store-name">Catálogo SaaS</div>
+          </div>
+          <button class="btn-primary" onclick="showGlobalLogin()" style="padding:10px 24px; font-size:13px">Acessar Painel</button>
+        </div>
+      </nav>
+
+      <!-- Hero -->
+      <section class="hero" style="min-height:90vh">
+        <div class="hero-content fade-up visible">
+          <div class="hero-badge"><span class="dot"></span> Solução para Lojistas</div>
+          <h1>Venda mais com um catálogo <span class="gradient-text">Premium</span></h1>
+          <p>A plataforma definitiva para revendedores de iPhones e eletrônicos. Profissionalismo, agilidade e conversão em um só lugar.</p>
+          <div class="hero-buttons">
+            <button class="btn-primary" onclick="window.open('https://wa.me/5511999999999','_blank')">Criar meu Catálogo</button>
+            <button class="btn-outline" onclick="showGlobalLogin()">Já sou Cliente</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Features -->
+      <section class="section" style="background:var(--bg-secondary)">
+        <div class="section-header">
+          <div class="section-label">Recursos</div>
+          <h2 class="section-title">Feito para o seu negócio</h2>
+        </div>
+        <div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+          <div class="card-stat" style="background:var(--bg-card); padding:30px; border-radius:20px; border:1px solid var(--border)">
+            <div style="font-size:32px; margin-bottom:15px">📱</div>
+            <h3>Totalmente Responsivo</h3>
+            <p style="color:var(--text-muted); font-size:14px; margin-top:10px">Seu cliente navega com perfeição no celular ou computador.</p>
+          </div>
+          <div class="card-stat" style="background:var(--bg-card); padding:30px; border-radius:20px; border:1px solid var(--border)">
+            <div style="font-size:32px; margin-bottom:15px">📲</div>
+            <h3>Pedido no WhatsApp</h3>
+            <p style="color:var(--text-muted); font-size:14px; margin-top:10px">Receba pedidos detalhados direto no seu WhatsApp com um clique.</p>
+          </div>
+          <div class="card-stat" style="background:var(--bg-card); padding:30px; border-radius:20px; border:1px solid var(--border)">
+            <div style="font-size:32px; margin-bottom:15px">⚙️</div>
+            <h3>Painel do Lojista</h3>
+            <p style="color:var(--text-muted); font-size:14px; margin-top:10px">Gerencie produtos, preços e categorias sem precisar de um programador.</p>
+          </div>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <p>Catálogo SaaS &copy; 2024 &mdash; Todos os direitos reservados</p>
+      </footer>
+    </div>
+  `;
+}
+
+// ===== GLOBAL LOGIN SYSTEM =====
+function showGlobalLogin() {
+  document.getElementById('app').innerHTML = `
+    <div class="login-container">
+      <div class="login-card">
+        <h2 style="margin-bottom:10px">Acesso ao Painel</h2>
+        <p class="subtitle">Digite seu e-mail para entrar na sua loja</p>
+        <div class="form-group">
+          <label class="form-label">E-mail</label>
+          <input type="email" id="gEmail" class="form-input" placeholder="seu@email.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Senha</label>
+          <input type="password" id="gPass" class="form-input" placeholder="••••••••">
+        </div>
+        <button class="btn-full" id="btn-login" onclick="doGlobalLogin()">Entrar agora</button>
+        <p style="text-align:center;margin-top:20px">
+          <a href="#" style="color:var(--text-muted);text-decoration:none;font-size:13px" onclick="event.preventDefault();renderLandingPage()">← Voltar</a>
+        </p>
+      </div>
+    </div>
+    <div id="toast" class="toast"></div>
+  `;
+}
+
+async function doGlobalLogin() {
+  const email = document.getElementById('gEmail').value;
+  const pass = document.getElementById('gPass').value;
+  const btn = document.getElementById('btn-login');
+
+  if (!email || !pass) return showToast('Preencha tudo! ⚠️');
+
+  btn.disabled = true;
+  btn.textContent = 'Verificando...';
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('stores')
+      .select('*')
+      .eq('email', email)
+      .eq('password', pass)
+      .single();
+
+    if (error || !data) {
+      showToast('E-mail ou senha incorretos ❌');
+      btn.disabled = false;
+      btn.textContent = 'Entrar agora';
+      return;
+    }
+
+    // Login com sucesso! Redirecionar para o admin da loja específica
+    window.location.href = `?s=${data.slug}#admin`;
+  } catch (err) {
+    showToast('Erro ao conectar. Tente novamente.');
+    btn.disabled = false;
+    btn.textContent = 'Entrar agora';
+  }
+}
 
 async function checkRoute() {
   const hash = window.location.hash;
