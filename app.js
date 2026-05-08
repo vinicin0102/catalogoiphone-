@@ -8,23 +8,34 @@ let currentAdminSection = 'dashboard';
 
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', async () => {
-  Storage.initDefaults();
-  
-  // Primeiro, vamos esconder o carregamento após um breve delay
-  setTimeout(() => {
+  console.log('App iniciado...');
+  try {
+    Storage.initDefaults();
+    
+    // Forçar o sumiço da tela de loading em no máximo 2 segundos, aconteça o que acontecer
+    setTimeout(() => {
+      const loader = document.querySelector('.loading-screen');
+      if (loader) {
+        loader.classList.add('hidden');
+        console.log('Loading removido via timeout de segurança');
+      }
+    }, 2000);
+
+    // Identificar a loja
+    const store = await Storage.identifyStore();
+    
+    if (!store) {
+      renderError('Bem-vindo! Use um link de loja válido (ex: ?s=demo).');
+    } else {
+      await checkRoute();
+      initScrollAnimations();
+    }
+  } catch (err) {
+    console.error('Erro crítico na inicialização:', err);
+    // Se der erro, pelo menos removemos o loading para mostrar o erro
     document.querySelector('.loading-screen')?.classList.add('hidden');
-  }, 1000);
-
-  // Identificar a loja
-  const store = await Storage.identifyStore();
-  
-  if (!store) {
-    renderError('Bem-vindo à nossa plataforma! Para ver um catálogo, use o link correto (ex: ?s=nome-da-loja).');
-    return;
+    renderError('Erro de conexão com o banco de dados. Verifique seu console.');
   }
-
-  checkRoute();
-  initScrollAnimations();
 });
 
 async function checkRoute() {
