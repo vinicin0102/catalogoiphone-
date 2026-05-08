@@ -10,8 +10,12 @@ const Storage = {
     const slug = params.get('s') || params.get('slug');
     
     if (!slug) {
-      // Se não houver slug, podemos redirecionar para uma landing page ou mostrar erro
       console.error('Nenhuma loja identificada na URL');
+      return null;
+    }
+
+    if (typeof supabaseClient === 'undefined') {
+      console.error('supabaseClient não está definido!');
       return null;
     }
 
@@ -38,7 +42,7 @@ const Storage = {
   },
 
   async saveStore(store) {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('stores')
       .update(store)
       .eq('id', currentStoreId);
@@ -48,7 +52,7 @@ const Storage = {
   },
 
   async getProducts() {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('products')
       .select('*')
       .eq('store_id', currentStoreId)
@@ -60,7 +64,7 @@ const Storage = {
   async saveProduct(product) {
     product.store_id = currentStoreId;
     if (product.id && product.id.length > 20) { // UUID check
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('products')
         .update(product)
         .eq('id', product.id);
@@ -68,7 +72,7 @@ const Storage = {
       return data;
     } else {
       delete product.id; // Let Supabase generate UUID
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('products')
         .insert([product]);
       if (error) throw error;
@@ -77,7 +81,7 @@ const Storage = {
   },
 
   async deleteProduct(id) {
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from('products')
       .delete()
       .eq('id', id);
@@ -85,7 +89,7 @@ const Storage = {
   },
 
   async getCategories() {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('categories')
       .select('*')
       .eq('store_id', currentStoreId);
@@ -95,7 +99,7 @@ const Storage = {
 
   async saveCategory(cat) {
     cat.store_id = currentStoreId;
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('categories')
       .insert([cat]);
     if (error) throw error;
@@ -103,7 +107,7 @@ const Storage = {
   },
 
   async deleteCategory(id) {
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from('categories')
       .delete()
       .eq('id', id);
@@ -111,7 +115,7 @@ const Storage = {
   },
 
   async getReviews() {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('reviews')
       .select('*')
       .eq('store_id', currentStoreId)
@@ -122,7 +126,7 @@ const Storage = {
 
   async saveReview(review) {
     review.store_id = currentStoreId;
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('reviews')
       .insert([review]);
     if (error) throw error;
@@ -130,15 +134,14 @@ const Storage = {
   },
 
   async deleteReview(id) {
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from('reviews')
       .delete()
       .eq('id', id);
     if (error) throw error;
   },
 
-  // Método legado para evitar erros de inicialização, mas não faz nada agora
   initDefaults() {
-    console.log('Sistema migrado para supabaseClient. Ignorando LocalStorage.');
+    console.log('Sistema migrado para supabaseClient.');
   }
 };
