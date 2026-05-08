@@ -42,6 +42,7 @@ async function renderAdmin() {
   const store = await Storage.getStore();
   const products = await Storage.getProducts();
   const categories = await Storage.getCategories();
+  const reviews = await Storage.getReviews();
 
   document.getElementById('app').innerHTML = `
     <div class="admin-layout">
@@ -174,7 +175,7 @@ async function renderAdmin() {
             <button class="btn-primary" onclick="openReviewModal()" style="font-size:13px;padding:10px 20px">+ Nova Avaliação</button>
           </div>
           <div class="settings-grid">
-            ${Storage.getReviews().map(r => `
+            ${reviews.map(r => `
               <div class="review-card">
                 <div class="review-stars">${'★'.repeat(r.stars)}</div>
                 <p class="review-text">"${r.text}"</p>
