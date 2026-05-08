@@ -290,6 +290,9 @@ function initScrollAnimations() {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
   }, { threshold: 0.1 });
+  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+}
+
 // ===== ERROR HANDLING =====
 function renderError(msg) {
   document.getElementById('app').innerHTML = `
